@@ -27,6 +27,7 @@ from tornado.iostream import IOStream
 from tornado import gen
 from tornado.netutil import Resolver
 
+
 _INITIAL_CONNECT_TIMEOUT = 0.3
 
 
@@ -137,6 +138,7 @@ class TCPClient(object):
     """A non-blocking TCP connection factory.
     """
     def __init__(self, resolver=None, io_loop=None):
+        reconnect = False
         self.io_loop = io_loop or IOLoop.current()
         if resolver is not None:
             self.resolver = resolver
@@ -161,10 +163,16 @@ class TCPClient(object):
         connector = _Connector(
             addrinfo, self.io_loop,
             functools.partial(self._create_stream, max_buffer_size))
-        af, addr, stream = yield connector.start()
-        # TODO: For better performance we could cache the (af, addr)
-        # information here and re-use it on sbusequent connections to
-        # the same host. (http://tools.ietf.org/html/rfc6555#section-4.2)
+        if not reconnect:
+            storeAf,storeAddr,reonnect = af,addr,True
+            af, addr, stream = yield connector.start()
+        else:
+            storeAF, storeAddr, stream = yield connector.start()
+            # For better performance we could cache the (af, addr)
+            # information here and re-use it on sbusequent connections to
+            # the same host. (http://tools.ietf.org/html/rfc6555#section-4.2)
+            # Cashing the Info to be used later for a fast reconnect
+            
         if ssl_options is not None:
             stream = yield stream.start_tls(False, ssl_options=ssl_options,
                                             server_hostname=host)
