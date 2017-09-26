@@ -100,6 +100,7 @@ class _Connector(object):
 
     def on_connect_done(self, addrs, af, addr, future):
         self.remaining -= 1
+        connected = True
         try:
             stream = future.result()
         except Exception as e:
@@ -138,7 +139,8 @@ class TCPClient(object):
     """A non-blocking TCP connection factory.
     """
     def __init__(self, resolver=None, io_loop=None):
-        reconnect = False
+        storeHost = ''
+        connected = False
         self.io_loop = io_loop or IOLoop.current()
         if resolver is not None:
             self.resolver = resolver
@@ -163,8 +165,8 @@ class TCPClient(object):
         connector = _Connector(
             addrinfo, self.io_loop,
             functools.partial(self._create_stream, max_buffer_size))
-        if not reconnect:
-            storeAf,storeAddr,reonnect = af,addr,True
+        if host != storeHost and not connected:
+            storeAf,storeAddr,storeHost = af,addr,host
             af, addr, stream = yield connector.start()
         else:
             storeAF, storeAddr, stream = yield connector.start()
