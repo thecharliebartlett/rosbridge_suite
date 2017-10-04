@@ -128,6 +128,7 @@ class _Connector(object):
 
     def on_timeout(self):
         self.timeout = None
+        connected=False
         self.try_connect(iter(self.secondary_addrs))
 
     def clear_timeout(self):
