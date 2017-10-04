@@ -276,3 +276,22 @@ class ConnectorTest(AsyncTestCase):
         self.assertFalse(future.done())
         self.resolve_connect(AF1, 'b', False)
         self.assertRaises(IOError, future.result)
+        
+    def test_reconnect(self):
+        conn, future = self.start_connect(self.addrinfo)
+        self.assert_pending((AF1, 'a'))
+        self.resolve_connect(AF1, 'a', True)
+        self.assertEqual(future.result(), (AF1, 'a', self.streams['a']))
+        #now checking for instant reconnect
+        self.assert_pending((AF2, 'a')(AF1, 'b'))
+        self.resolve_connect((AF2, 'a', True))
+        self.assertTrue(self.streams.pop('a').closed)
+        self.assertTrue(not self.streams.pop('b').closed)
+        self.assertTrue(self.connected)
+        #Testing Timed out
+        self.assert_pending((AF1, 'a'))
+        conn.on_timeout()
+        self.assertTrue(not self.connected)
+        
+        
+        
